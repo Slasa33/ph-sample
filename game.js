@@ -37,9 +37,30 @@ var move_ctl = false;
 var left,right,up,down;
 var exp;
 var themeConfig;
-
-
+var check = false;
+var timedEvent;
+var c = 0;
 var isCollision;
+
+
+
+//Experimentovat s animacemi hráče, s map editorem (tvorba vlastní mapy), kolizním systémem, atd.  [HOTOVO]
+
+//Po mapě se budou náhodně generovat předměty, které bude hráč sbírat a za které dostane body. [HOTOVO]
+
+//Přidat text, který bude zobrazovat nejlepší skóre  [HOTOVO]
+//          to se bude dekrementovat, pokud v časovém limitu hráč nenarazí na žádný předmět [HOTOVO]
+
+//Přidat nepřítele (další herní postavu), který se bude po mapě pohybovat zároveň s hráčem. [HOTOVO - bomby]
+    //pokud nastane kolize s hráčem, hráč přijde o skóre    [HOTOVO - skonci hra]
+
+//Nejlepší skóre můžete ukládat do úložiště. [HOTOVO]
+
+//Přidat na pozadí hudbu, přidat  zvuky při kolizi s předmětem, s nepřítelem. [HOTOVO, pozadi, kolize i s predmetem]
+
+
+
+
 
 function preload ()
 {
@@ -51,12 +72,12 @@ function preload ()
     this.load.tilemapTiledJSON('json_map', 'assets/json_map.json');
     this.load.spritesheet('bomb','assets/bomb.png',{ frameWidth: 32, frameHeight:32});
     this.load.spritesheet('explosion','assets/explosion.png',{ frameWidth: 32, frameHeight:32});
+
     this.load.audio('explosion_sound', 'assets/sounds/explosion.ogg');
     this.load.audio('pickup_sound', 'assets/sounds/pickup.ogg');
     this.load.audio('theme', 'assets/sounds/theme.mp3')
 
     this.load.image('explo', 'assets/explosion00.png');
-
     this.load.spritesheet('kaboom','assets/explode.png', {
         frameWidth: 128,
         frameHeight: 128
@@ -104,12 +125,18 @@ function create ()
     bombs = this.physics.add.group();
     this.physics.add.overlap(player, bombs, collisionBomb, null, this);
 
+
+
     explosion = this.physics.add.group();
 
-    
+
     this.physics.add.collider(player, collisionLayer);
     this.physics.add.overlap(player, backgroundLayer);
     this.physics.add.collider(bombs, collisionLayer);
+
+
+    timedEvent = this.time.addEvent({ delay: 1000, callback: test, callbackScope: this, loop: true });
+
     
     //F:set collision range 
     backgroundLayer.setCollisionBetween(1, 25);    
@@ -117,6 +144,7 @@ function create ()
     //F:Checks to see if the player overlaps with any of the items, 
     //f:if he does call the collisionHandler function
     this.physics.add.overlap(player, items, collisionHandler.bind(this));
+
 
     this.anims.create({
         key: 'explode',
@@ -163,8 +191,6 @@ function create ()
         delay: 0
     }
     this.theme.play(themeConfig);
-
-
     
     this.anims.create({
         key: 'run',
@@ -285,7 +311,9 @@ function collisionHandler(player, item) {
     if (coinsCollected > bestCollected) 
     { bestCollected = coinsCollected; 
     }
+
     updateText();
+
     //items.destroy();  
     item.disableBody(true, true);
       
@@ -300,7 +328,6 @@ function collisionHandler(player, item) {
         item.enableBody(true, itemX, itemY, true, true);
     }
 
-    //this.sound.play("pickup_sound");
 
     var x = (player.x < 200) ? Phaser.Math.Between(200, 400) : Phaser.Math.Between(50, 199);
     var y = (player.y < 200) ? Phaser.Math.Between(200, 400) : Phaser.Math.Between(50, 199);
@@ -309,6 +336,20 @@ function collisionHandler(player, item) {
     bomb.setBounce(1);
     bomb.setCollideWorldBounds(true);
     bomb.setVelocity(Phaser.Math.Between(-100,-50), 20);
+
+    c = 0;
+
+}
+
+function test()
+{
+    c++;
+
+    if(c === 10 && coinsCollected > 0) {
+        coinsCollected = coinsCollected - 1;
+        c = 0;
+        updateText();
+    }
 }
 
 function collisionBomb(player, bomb)
@@ -331,15 +372,12 @@ function collisionBomb(player, bomb)
         delay: 1000,
         callback: ()=>{
             this.scene.pause();
-
         }
     })
 
-
-
-    //this.scene.pause();
     localStorage.setItem(1, bestCollected);
     this.theme.stop(themeConfig);
 
 }
+
 
